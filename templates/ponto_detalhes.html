@@ -19,17 +19,21 @@
     <header class="header">
         <div class="container">
             <div class="logo">
-                <h1><i class="fas fa-mountain"></i> Ponto de Partida</h1>
+                <h1><i class="fas fa-mountain"></i> <span data-translate="app-name">Ponto de Partida</span></h1>
             </div>
             <nav class="nav">
                 <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-home"></i> Início
+                    <i class="fas fa-home"></i> <span data-translate="home">Início</span>
                 </a>
                 <a href="/perfil" class="nav-link">
-                    <i class="fas fa-user"></i> Perfil
+                    <i class="fas fa-user"></i> <span data-translate="profile">Perfil</span>
                 </a>
+                <div class="language-switcher-container">
+                    <button class="language-switcher active" data-lang="pt">PT</button>
+                    <button class="language-switcher" data-lang="en">EN</button>
+                </div>
                 <a href="/logout" class="nav-link logout">
-                    <i class="fas fa-sign-out-alt"></i> Sair
+                    <i class="fas fa-sign-out-alt"></i> <span data-translate="logout">Sair</span>
                 </a>
             </nav>
         </div>
@@ -38,7 +42,7 @@
     <main class="main">
         <div class="container">
             <div class="breadcrumb">
-                <a href="/dashboard"><i class="fas fa-home"></i> Início</a>
+                <a href="/dashboard"><i class="fas fa-home"></i> <span data-translate="home">Início</span></a>
                 <span><i class="fas fa-chevron-right"></i></span>
                 <span>{{ ponto.nome }}</span>
             </div>
@@ -55,22 +59,22 @@
                         <div class="info-item">
                             <i class="fas fa-clock"></i>
                             <div>
-                                <strong>Horário:</strong>
-                                <span>{{ ponto.horario_funcionamento or 'Não informado' }}</span>
+                                <strong data-translate="hours">Horário:</strong>
+                                <span class="dynamic-translate">{{ ponto.horario_funcionamento or 'Não informado' }}</span>
                             </div>
                         </div>
                         <div class="info-item">
                             <i class="fas fa-ticket-alt"></i>
                             <div>
-                                <strong>Entrada:</strong>
-                                <span>{{ ponto.preco_entrada or 'Gratuito' }}</span>
+                                <strong data-translate="entrance-fee">Entrada:</strong>
+                                <span class="dynamic-translate">{{ ponto.preco_entrada or 'Gratuito' }}</span>
                             </div>
                         </div>
                         {% if ponto.telefone_contato %}
                         <div class="info-item">
                             <i class="fas fa-phone"></i>
                             <div>
-                                <strong>Telefone:</strong>
+                                <strong data-translate="phone">Telefone:</strong>
                                 <span>{{ ponto.telefone_contato }}</span>
                             </div>
                         </div>
@@ -79,7 +83,7 @@
                         <div class="info-item">
                             <i class="fas fa-globe"></i>
                             <div>
-                                <strong>Site:</strong>
+                                <strong data-translate="website">Site:</strong>
                                 <a href="{{ ponto.site_oficial }}" target="_blank">{{ ponto.site_oficial }}</a>
                             </div>
                         </div>
@@ -90,19 +94,19 @@
 
             <div class="ponto-content">
                 <div class="descricao-section">
-                    <h2>Sobre o Local</h2>
-                    <p>{{ ponto.descricao }}</p>
+                    <h2 data-translate="about">Sobre o Local</h2>
+                    <p class="dynamic-translate-desc">{{ ponto.descricao }}</p>
                 </div>
 
                 <div class="mapa-section">
-                    <h2>Localização</h2>
+                    <h2 data-translate="location">Localização</h2>
                     <div id="map" class="mapa-container"></div>
                     <div class="mapa-acoes">
                         <button id="btn-direcoes" class="btn-direcoes">
-                            <i class="fas fa-directions"></i> Obter Direções
+                            <i class="fas fa-directions"></i> <span data-translate="get-directions">Obter Direções</span>
                         </button>
                         <button id="btn-compartilhar" class="btn-compartilhar">
-                            <i class="fas fa-share"></i> Compartilhar Localização
+                            <i class="fas fa-share"></i> <span data-translate="share-location">Compartilhar Localização</span>
                         </button>
                     </div>
                 </div>
@@ -112,10 +116,12 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Turismo pelo Sudeste. Todos os direitos reservados.</p>
+            <p data-translate="footer-text">&copy; 2024 Turismo pelo Sudeste. Todos os direitos reservados.</p>
         </div>
     </footer>
 
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
     <script>
         let map;
         let marker;

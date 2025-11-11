@@ -39,6 +39,30 @@
             </div>
             
             <div class="admin-grid">
+                <div class="admin-section visit-stats">
+                    <h2><i class="fas fa-chart-pie"></i> Estatísticas de Visitantes</h2>
+                    {% if visit_stats.total_visitors == 0 %}
+                    <p class="no-visit-data">Ainda não há visitas registradas nos pontos turísticos.</p>
+                    {% else %}
+                    <div class="visit-stats-grid">
+                        <div class="visit-stat-card total">
+                            <span class="visit-label">Visitantes únicos</span>
+                            <strong class="visit-value">{{ visit_stats.total_visitors }}</strong>
+                        </div>
+                        <div class="visit-stat-card southeast">
+                            <span class="visit-label">Moradores do Sudeste</span>
+                            <strong class="visit-value">{{ visit_stats.southeast_percentage }}%</strong>
+                            <span class="visit-subvalue">{{ visit_stats.southeast_count }} pessoas</span>
+                        </div>
+                        <div class="visit-stat-card others">
+                            <span class="visit-label">Visitantes de outras regiões</span>
+                            <strong class="visit-value">{{ visit_stats.other_percentage }}%</strong>
+                            <span class="visit-subvalue">{{ visit_stats.other_count }} pessoas</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
                 <div class="admin-section">
                     <h2><i class="fas fa-user-plus"></i> Cadastrar Novo Usuário</h2>
                     <form action="/cadastrarUsuario" method="post" class="admin-form">
@@ -102,6 +126,36 @@
                         {% endfor %}
                     </div>
                 </div>
+            </div>
+
+            <div class="admin-section avaliacoes-section" id="avaliacoes">
+                <h2><i class="fas fa-comments"></i> Avaliações dos Usuários</h2>
+                {% if avaliacoes %}
+                <div class="avaliacoes-list">
+                    {% for avaliacao in avaliacoes %}
+                    <div class="avaliacao-admin-item">
+                        <div class="avaliacao-admin-header">
+                            <div class="avaliacao-identificacao">
+                                <span class="avaliacao-usuario"><i class="fas fa-user"></i> {{ avaliacao.usuario }}</span>
+                                <span class="avaliacao-ponto"><i class="fas fa-map-marker-alt"></i> {{ avaliacao.ponto }}</span>
+                            </div>
+                            <div class="avaliacao-nota">
+                                <i class="fas fa-star"></i> {{ avaliacao.nota }}
+                            </div>
+                        </div>
+                        {% if avaliacao.comentario %}
+                        <p class="avaliacao-comentario">{{ avaliacao.comentario }}</p>
+                        {% endif %}
+                        <div class="avaliacao-rodape">
+                            <span class="avaliacao-data"><i class="fas fa-clock"></i> {{ avaliacao.data }}</span>
+                            <span class="avaliacao-id">ID: {{ avaliacao.id }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="sem-avaliacoes-admin">Nenhuma avaliação registrada até o momento.</p>
+                {% endif %}
             </div>
 
             <div class="admin-actions">

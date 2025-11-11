@@ -4,8 +4,13 @@ import os
 import hashlib
 import time
 from datetime import datetime
+import unicodedata
+import re
+import json
+from urllib import request as urlrequest, error as urlerror
 from werkzeug.utils import secure_filename
 from database import init_database, get_connection
+from collections import defaultdict
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'turismo_sudeste_2024'
@@ -51,6 +56,135 @@ def get_current_user():
         }
     return None
 
+
+def fetch_recent_reviews(cursor, ponto_ids, limite=5):
+    """Busca avaliações recentes dos clientes para uma lista de pontos turísticos."""
+    if not ponto_ids:
+        return {}
+
+    placeholders = ','.join(['?'] * len(ponto_ids))
+    query = f'''
+        SELECT ponto_id, nome_usuario, nota, comentario, data_avaliacao
+        FROM (
+            SELECT a.ponto_turistico_id AS ponto_id,
+                   u.nome AS nome_usuario,
+                   a.nota,
+                   a.comentario,
+                   a.data_avaliacao,
+                   ROW_NUMBER() OVER (PARTITION BY a.ponto_turistico_id ORDER BY a.data_avaliacao DESC) AS rn
+            FROM avaliacoes a
+            JOIN usuarios u ON a.usuario_id = u.id
+            WHERE a.ponto_turistico_id IN ({placeholders})
+        )
+        WHERE rn <= ?
+        ORDER BY ponto_id, data_avaliacao DESC
+    '''
+    params = list(ponto_ids)
+    params.append(limite)
+    cursor.execute(query, params)
+
+    avaliacoes_por_ponto = defaultdict(list)
+    for ponto_id, nome_usuario, nota, comentario, data_avaliacao in cursor.fetchall():
+        data_formatada = data_avaliacao
+        if data_avaliacao:
+            try:
+                data_formatada = datetime.strptime(data_avaliacao, '%Y-%m-%d %H:%M:%S').strftime('%d/%m/%Y %H:%M')
+            except ValueError:
+                data_formatada = data_avaliacao
+
+        avaliacoes_por_ponto[ponto_id].append({
+            'usuario': nome_usuario,
+            'nota': nota,
+            'comentario': comentario or '',
+            'data': data_formatada
+        })
+    return avaliacoes_por_ponto
+
+
+def attach_recent_reviews(cursor, pontos, limite=5):
+    """Anexa as avaliações recentes aos pontos turísticos informados."""
+    if not pontos:
+        return
+
+    ponto_ids = [ponto['id'] for ponto in pontos]
+    avaliacoes_por_ponto = fetch_recent_reviews(cursor, ponto_ids, limite)
+
+    for ponto in pontos:
+        ponto['avaliacoes'] = avaliacoes_por_ponto.get(ponto['id'], [])
+
+
+def normalize_text(value):
+    if not value:
+        return ''
+    normalized = unicodedata.normalize('NFD', value)
+    return ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn').lower()
+
+
+SOUTHEAST_REGEX = re.compile(r'\b(rj|rio de janeiro|sp|sao paulo|mg|minas gerais|es|espirito santo)\b', re.IGNORECASE)
+
+SOUTHEAST_UFS = {'rj', 'sp', 'mg', 'es'}
+
+
+def is_address_in_southeast(address):
+    if not address:
+        return False
+    uf_match = re.search(r'\b([A-Z]{2})\b', address.upper())
+    if uf_match and uf_match.group(1).lower() in SOUTHEAST_UFS:
+        return True
+    normalized = normalize_text(address)
+    return bool(SOUTHEAST_REGEX.search(normalized))
+
+
+def sanitize_cep(cep):
+    if not cep:
+        return ''
+    return re.sub(r'\D', '', cep)
+
+
+def fetch_address_by_cep(cep):
+    cep_digits = sanitize_cep(cep)
+    if len(cep_digits) != 8:
+        raise ValueError("CEP inválido. Informe 8 dígitos.")
+    
+    url = f'https://viacep.com.br/ws/{cep_digits}/json/'
+    try:
+        with urlrequest.urlopen(url, timeout=5) as response:
+            if response.status != 200:
+                raise ValueError("Erro ao consultar o CEP informado.")
+            raw_data = response.read().decode('utf-8')
+    except (urlerror.URLError, TimeoutError):
+        raise ValueError("Não foi possível consultar o CEP. Tente novamente.")
+    
+    try:
+        data = json.loads(raw_data)
+    except json.JSONDecodeError:
+        raise ValueError("Resposta inválida da consulta de CEP.")
+    if data.get('erro'):
+        raise ValueError("CEP não encontrado.")
+    
+    logradouro = data.get('logradouro', '').strip()
+    bairro = data.get('bairro', '').strip()
+    localidade = data.get('localidade', '').strip()
+    uf = data.get('uf', '').strip()
+    
+    if not localidade or not uf:
+        raise ValueError("Endereço incompleto para o CEP informado.")
+    
+    partes = [logradouro, bairro]
+    partes = [parte for parte in partes if parte]
+    endereco_formatado = ', '.join(partes) if partes else ''
+    cidade_estado = f"{localidade} - {uf}"
+    
+    if endereco_formatado:
+        endereco_formatado = f"{endereco_formatado}, {cidade_estado}"
+    else:
+        endereco_formatado = cidade_estado
+    
+    return {
+        'endereco': endereco_formatado,
+        'uf': uf
+    }
+
 @app.route('/')
 def home():
     if is_logged_in():
@@ -68,6 +202,7 @@ def dashboard():
     # Buscar pontos turísticos por estado (5 por estado)
     estados = ['RJ', 'SP', 'MG', 'ES']
     pontos_por_estado = {}
+    todos_pontos = []
     
     for estado in estados:
         cursor.execute('''
@@ -106,12 +241,15 @@ def dashboard():
                 'site_oficial': ponto[11],
                 'data_cadastro': ponto[12],
                 'media_avaliacoes': ponto[13],
-                'total_avaliacoes': ponto[14]
+                'total_avaliacoes': ponto[14],
+                'avaliacoes': []
             }
             pontos_mapeados.append(ponto_dict)
+            todos_pontos.append(ponto_dict)
         
         pontos_por_estado[estado] = pontos_mapeados
     
+    attach_recent_reviews(cursor, todos_pontos)
     conn.close()
     
     return render_template('dashboard.html', pontos_por_estado=pontos_por_estado, user=get_current_user())
@@ -217,10 +355,12 @@ def pesquisar():
             'site_oficial': ponto[11],
             'data_cadastro': ponto[12],
             'media_avaliacoes': ponto[13],
-            'total_avaliacoes': ponto[14]
+            'total_avaliacoes': ponto[14],
+            'avaliacoes': []
         }
         pontos_mapeados.append(ponto_dict)
     
+    attach_recent_reviews(cursor, pontos_mapeados)
     conn.close()
     
     return render_template('dashboard.html', pontos_turisticos=pontos_mapeados, user=get_current_user(), termo_pesquisa=termo_pesquisa)
@@ -325,12 +465,22 @@ def ponto_detalhes(ponto_id):
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM pontos_turisticos WHERE id = ?', (ponto_id,))
     ponto = cursor.fetchone()
-    conn.close()
     
     if not ponto:
+        conn.close()
         flash("Ponto turístico não encontrado!")
         return redirect(url_for('dashboard'))
     
+    user = get_current_user()
+    if user:
+        origem_sudeste = 1 if is_address_in_southeast(user.get('endereco')) else 0
+        cursor.execute('''
+            INSERT INTO visitas_pontos (usuario_id, ponto_turistico_id, origem_sudeste)
+            VALUES (?, ?, ?)
+        ''', (user['id'], ponto_id, origem_sudeste))
+        conn.commit()
+    conn.close()
+
     ponto_data = {
         'id': ponto[0],
         'nome': ponto[1],
@@ -443,34 +593,52 @@ def atualizar_perfil():
 def login():
     nome = request.form.get('nome')
     senha = request.form.get('senha')
+    cep_login = request.form.get('cep_login', '').strip()
 
     if not nome or not senha:
         flash("Nome e senha são obrigatórios!")
         return redirect(url_for('home'))
+
+    if not cep_login:
+        flash("Informe o CEP para continuar!")
+        return redirect(url_for('home'))
+
+    try:
+        endereco_info = fetch_address_by_cep(cep_login)
+    except ValueError as exc:
+        flash(str(exc))
+        return redirect(url_for('home'))
+    
+    endereco_login = endereco_info['endereco']
     
     conn = get_connection()
     cursor = conn.cursor()
     
     # Verificar se é administrador
-    if nome == 'adm' and senha == '000':
-        cursor.execute('SELECT id FROM usuarios WHERE nome = ?', ('adm',))
+    if nome == 'admin' and senha == '0000':
+        cursor.execute('SELECT id FROM usuarios WHERE nome = ?', ('admin',))
         admin = cursor.fetchone()
         if admin:
             session['user_id'] = admin[0]
             session['is_admin'] = True
+            cursor.execute('UPDATE usuarios SET endereco = ? WHERE id = ?', (endereco_login, admin[0]))
+            conn.commit()
             conn.close()
             return redirect(url_for('adm'))
     
     # Verificar usuário normal
     cursor.execute('SELECT id, senha FROM usuarios WHERE nome = ?', (nome,))
     user = cursor.fetchone()
-    conn.close()
     
     if user and user[1] == hash_password(senha):
         session['user_id'] = user[0]
         session['is_admin'] = False
+        cursor.execute('UPDATE usuarios SET endereco = ? WHERE id = ?', (endereco_login, user[0]))
+        conn.commit()
+        conn.close()
         return redirect(url_for('dashboard'))
     else:
+        conn.close()
         flash("Usuário ou senha inválidos!")
         return redirect(url_for('home'))
 
@@ -772,9 +940,59 @@ def adm():
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM usuarios ORDER BY data_cadastro DESC')
     usuarios = cursor.fetchall()
+
+    cursor.execute('SELECT COUNT(DISTINCT usuario_id) FROM visitas_pontos')
+    total_visitantes = cursor.fetchone()[0] or 0
+
+    cursor.execute('SELECT COUNT(DISTINCT usuario_id) FROM visitas_pontos WHERE origem_sudeste = 1')
+    visitantes_sudeste = cursor.fetchone()[0] or 0
+
+    visitantes_outros = total_visitantes - visitantes_sudeste if total_visitantes else 0
+
+    if total_visitantes:
+        percentual_sudeste = round((visitantes_sudeste / total_visitantes) * 100, 2)
+        percentual_outros = round((visitantes_outros / total_visitantes) * 100, 2)
+    else:
+        percentual_sudeste = 0.0
+        percentual_outros = 0.0
+
+    cursor.execute('''
+        SELECT a.id, u.nome AS usuario_nome, pt.nome AS ponto_nome, a.nota, a.comentario, a.data_avaliacao
+        FROM avaliacoes a
+        JOIN usuarios u ON a.usuario_id = u.id
+        JOIN pontos_turisticos pt ON a.ponto_turistico_id = pt.id
+        ORDER BY a.data_avaliacao DESC
+    ''')
+    avaliacoes_rows = cursor.fetchall()
+
+    avaliacoes = []
+    for row in avaliacoes_rows:
+        data_br = row[5]
+        if data_br:
+            try:
+                data_br = datetime.strptime(row[5], '%Y-%m-%d %H:%M:%S').strftime('%d/%m/%Y %H:%M')
+            except ValueError:
+                data_br = row[5]
+
+        avaliacoes.append({
+            'id': row[0],
+            'usuario': row[1],
+            'ponto': row[2],
+            'nota': row[3],
+            'comentario': row[4] or '',
+            'data': data_br
+        })
+
+    visit_stats = {
+        'total_visitors': total_visitantes,
+        'southeast_count': visitantes_sudeste,
+        'other_count': visitantes_outros,
+        'southeast_percentage': percentual_sudeste,
+        'other_percentage': percentual_outros
+    }
     conn.close()
     
-    return render_template('adm.html', usuarios=usuarios)
+    return render_template('adm.html', usuarios=usuarios, visit_stats=visit_stats, avaliacoes=avaliacoes)
 
 @app.route('/cadastrarUsuario', methods=['POST'])
 def cadastrarUsuario():

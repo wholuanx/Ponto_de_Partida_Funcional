@@ -84,6 +84,39 @@ body {
     background: #c0392b;
 }
 
+/* Botão de idioma */
+.language-switcher-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 1rem;
+}
+
+.language-switcher {
+    background: transparent;
+    border: 2px solid #3498db;
+    color: #3498db;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.language-switcher:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.language-switcher.active {
+    background: #3498db;
+    color: white;
+}
+
 /* Breadcrumb */
 .breadcrumb {
     background: rgba(255, 255, 255, 0.9);

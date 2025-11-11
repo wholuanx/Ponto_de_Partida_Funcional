@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Ponto Turístico - Admin</title>
+    <title data-translate="edit-point-title">Editar Ponto Turístico - Admin</title>
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -183,17 +183,21 @@
     <header class="header">
         <div class="container">
             <div class="logo">
-                <h1><i class="fas fa-mountain"></i> Ponto de Partida</h1>
+                <h1><i class="fas fa-mountain"></i> <span data-translate="app-name">Ponto de Partida</span></h1>
             </div>
             <nav class="nav">
                 <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-home"></i> Dashboard
+                    <i class="fas fa-home"></i> <span data-translate="dashboard">Dashboard</span>
                 </a>
                 <a href="/adm" class="nav-link">
-                    <i class="fas fa-users"></i> Usuários
+                    <i class="fas fa-users"></i> <span data-translate="users">Usuários</span>
                 </a>
+                <div class="language-switcher-container">
+                    <button class="language-switcher active" data-lang="pt">PT</button>
+                    <button class="language-switcher" data-lang="en">EN</button>
+                </div>
                 <a href="/logout" class="nav-link logout">
-                    <i class="fas fa-sign-out-alt"></i> Sair
+                    <i class="fas fa-sign-out-alt"></i> <span data-translate="logout">Sair</span>
                 </a>
             </nav>
         </div>
@@ -202,49 +206,49 @@
     <main class="main">
         <div class="admin-container">
             <a href="/dashboard" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                <i class="fas fa-arrow-left"></i> <span data-translate="back-to-dashboard">Voltar ao Dashboard</span>
             </a>
             
-            <h2><i class="fas fa-edit"></i> Editar Ponto Turístico</h2>
+            <h2><i class="fas fa-edit"></i> <span data-translate="edit-point">Editar Ponto Turístico</span></h2>
             
             <!-- Imagem Atual -->
             <div class="current-image">
                 <img src="/static/uploads/{{ ponto.imagem }}" alt="{{ ponto.nome }}" onerror="this.src='/static/css/imagens/default.jpg'">
-                <p>Imagem atual do ponto turístico</p>
+                <p data-translate="current-image">Imagem atual do ponto turístico</p>
             </div>
             
             <form method="post" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="nome">Nome do Ponto Turístico <span class="required">*</span></label>
+                    <label for="nome" data-translate="point-name-label">Nome do Ponto Turístico <span class="required">*</span></label>
                     <input type="text" id="nome" name="nome" value="{{ ponto.nome }}" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="descricao">Descrição <span class="required">*</span></label>
-                    <textarea id="descricao" name="descricao" required>{{ ponto.descricao }}</textarea>
+                    <label for="descricao" data-translate="description-label">Descrição <span class="required">*</span></label>
+                    <textarea id="descricao" name="descricao" class="dynamic-translate-desc" required>{{ ponto.descricao }}</textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label for="endereco">Endereço Completo <span class="required">*</span></label>
+                    <label for="endereco" data-translate="address-label">Endereço Completo <span class="required">*</span></label>
                     <input type="text" id="endereco" name="endereco" value="{{ ponto.endereco }}" required>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="latitude">Latitude <span class="required">*</span></label>
+                        <label for="latitude" data-translate="latitude-label">Latitude <span class="required">*</span></label>
                         <input type="number" id="latitude" name="latitude" step="any" value="{{ ponto.latitude }}" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="longitude">Longitude <span class="required">*</span></label>
+                        <label for="longitude" data-translate="longitude-label">Longitude <span class="required">*</span></label>
                         <input type="number" id="longitude" name="longitude" step="any" value="{{ ponto.longitude }}" required>
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label for="categoria">Categoria <span class="required">*</span></label>
+                    <label for="categoria" data-translate="category-label">Categoria <span class="required">*</span></label>
                     <select id="categoria" name="categoria" required>
-                        <option value="">Selecione uma categoria</option>
+                        <option value="" data-translate="select-category">Selecione uma categoria</option>
                         <option value="Monumento" {% if ponto.categoria == 'Monumento' %}selected{% endif %}>Monumento</option>
                         <option value="Museu" {% if ponto.categoria == 'Museu' %}selected{% endif %}>Museu</option>
                         <option value="Paisagem" {% if ponto.categoria == 'Paisagem' %}selected{% endif %}>Paisagem</option>
@@ -259,53 +263,59 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="horario_funcionamento">Horário de Funcionamento</label>
+                    <label for="horario_funcionamento" data-translate="opening-hours-label">Horário de Funcionamento</label>
                     <input type="text" id="horario_funcionamento" name="horario_funcionamento" 
+                           class="dynamic-translate"
                            value="{{ ponto.horario_funcionamento or '' }}" 
+                           data-translate="opening-hours-placeholder"
                            placeholder="Ex: Diariamente das 8h às 18h">
                 </div>
                 
                 <div class="form-group">
-                    <label for="preco_entrada">Preço de Entrada</label>
+                    <label for="preco_entrada" data-translate="entrance-price-label">Preço de Entrada</label>
                     <input type="text" id="preco_entrada" name="preco_entrada" 
+                           class="dynamic-translate"
                            value="{{ ponto.preco_entrada or '' }}" 
+                           data-translate="entrance-price-placeholder"
                            placeholder="Ex: R$ 50,00 ou Gratuito">
                 </div>
                 
                 <div class="form-group">
-                    <label for="telefone_contato">Telefone de Contato</label>
+                    <label for="telefone_contato" data-translate="contact-phone-label">Telefone de Contato</label>
                     <input type="text" id="telefone_contato" name="telefone_contato" 
                            value="{{ ponto.telefone_contato or '' }}" 
+                           data-translate="contact-phone-placeholder"
                            placeholder="Ex: (11) 1234-5678">
                 </div>
                 
                 <div class="form-group">
-                    <label for="site_oficial">Site Oficial</label>
+                    <label for="site_oficial" data-translate="official-website-label">Site Oficial</label>
                     <input type="url" id="site_oficial" name="site_oficial" 
                            value="{{ ponto.site_oficial or '' }}" 
+                           data-translate="official-website-placeholder"
                            placeholder="Ex: https://www.exemplo.com.br">
                 </div>
                 
                 <div class="form-group">
-                    <label for="imagem">Nova Foto do Ponto Turístico</label>
+                    <label for="imagem" data-translate="new-photo-label">Nova Foto do Ponto Turístico</label>
                     <div class="file-input">
                         <input type="file" id="imagem" name="imagem" accept="image/*">
                         <label for="imagem" class="file-input-label">
-                            <i class="fas fa-camera"></i> Clique para selecionar uma nova imagem
+                            <i class="fas fa-camera"></i> <span data-translate="select-image">Clique para selecionar uma nova imagem</span>
                         </label>
                     </div>
-                    <small style="color: #7f8c8d; margin-top: 0.5rem; display: block;">
+                    <small style="color: #7f8c8d; margin-top: 0.5rem; display: block;" data-translate="image-info">
                         Deixe em branco para manter a imagem atual. Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 16MB
                     </small>
                 </div>
                 
                 <div class="form-actions">
                     <button type="submit" class="btn-submit">
-                        <i class="fas fa-save"></i> Salvar Alterações
+                        <i class="fas fa-save"></i> <span data-translate="save-changes">Salvar Alterações</span>
                     </button>
                     
                     <button type="button" class="btn-delete" onclick="confirmarExclusao()">
-                        <i class="fas fa-trash"></i> Excluir Ponto Turístico
+                        <i class="fas fa-trash"></i> <span data-translate="delete-point">Excluir Ponto Turístico</span>
                     </button>
                 </div>
             </form>
@@ -316,16 +326,19 @@
         </div>
     </main>
 
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
     <script>
         // Atualizar label do arquivo quando selecionado
         document.getElementById('imagem').addEventListener('change', function(e) {
             const label = document.querySelector('.file-input-label');
+            const selectImageText = translator ? translator.translate('select-image') : 'Clique para selecionar uma nova imagem';
             if (e.target.files.length > 0) {
                 label.innerHTML = '<i class="fas fa-check"></i> ' + e.target.files[0].name;
                 label.style.borderColor = '#f39c12';
                 label.style.background = '#fef9e7';
             } else {
-                label.innerHTML = '<i class="fas fa-camera"></i> Clique para selecionar uma nova imagem';
+                label.innerHTML = '<i class="fas fa-camera"></i> ' + selectImageText;
                 label.style.borderColor = '#bdc3c7';
                 label.style.background = '#f8f9fa';
             }

@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import hashlib
 from datetime import datetime
 
 def init_database():
@@ -57,6 +58,19 @@ def init_database():
         )
     ''')
     
+    # Tabela de registros de visitas
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS visitas_pontos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            ponto_turistico_id INTEGER NOT NULL,
+            data_visita TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            origem_sudeste INTEGER NOT NULL CHECK (origem_sudeste IN (0, 1)),
+            FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
+            FOREIGN KEY (ponto_turistico_id) REFERENCES pontos_turisticos (id)
+        )
+    ''')
+
     # Inserir dados iniciais de pontos turísticos do Rio de Janeiro
     pontos_turisticos = [
         {
@@ -140,12 +154,37 @@ def init_database():
             ponto['preco_entrada'], ponto['telefone_contato'], ponto['site_oficial']
         ))
     
-    # Inserir usuário administrador padrão
-    cursor.execute('''
-        INSERT OR IGNORE INTO usuarios 
-        (nome, email, senha, endereco, telefone, cpf)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', ('adm', 'admin@turismo.com', '000', 'Endereço Admin', '00000000000', '00000000000'))
+    admin_nome = 'admin'
+    admin_email = 'admin@turismo.com'
+    admin_senha_hash = hashlib.sha256('0000'.encode()).hexdigest()
+    admin_endereco = 'Endereço Admin'
+    admin_telefone = '00000000000'
+    admin_cpf = '00000000000'
+
+    cursor.execute('SELECT id FROM usuarios WHERE nome = ?', (admin_nome,))
+    admin_row = cursor.fetchone()
+
+    if admin_row:
+        cursor.execute('''
+            UPDATE usuarios
+            SET email = ?, senha = ?, endereco = ?, telefone = ?, cpf = ?
+            WHERE id = ?
+        ''', (admin_email, admin_senha_hash, admin_endereco, admin_telefone, admin_cpf, admin_row[0]))
+    else:
+        cursor.execute('SELECT id FROM usuarios WHERE nome = ?', ('adm',))
+        legacy_admin = cursor.fetchone()
+
+        if legacy_admin:
+            cursor.execute('''
+                UPDATE usuarios
+                SET nome = ?, email = ?, senha = ?, endereco = ?, telefone = ?, cpf = ?
+                WHERE id = ?
+            ''', (admin_nome, admin_email, admin_senha_hash, admin_endereco, admin_telefone, admin_cpf, legacy_admin[0]))
+        else:
+            cursor.execute('''
+                INSERT INTO usuarios (nome, email, senha, endereco, telefone, cpf)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (admin_nome, admin_email, admin_senha_hash, admin_endereco, admin_telefone, admin_cpf))
     
     conn.commit()
     conn.close()

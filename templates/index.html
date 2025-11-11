@@ -3,11 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Turismo pelo Sudeste - Login</title>
+    <title data-translate="title">Turismo pelo Sudeste - Login</title>
     <link rel="stylesheet" href="/static/css/home.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+    <!-- Botão de idioma -->
+    <div class="language-switcher-container">
+        <button class="language-switcher active" data-lang="pt">PT</button>
+        <button class="language-switcher" data-lang="en">EN</button>
+    </div>
     {% set mensagem = get_flashed_messages() %}
     {% if mensagem %}
         <div class="flash_alerta">
@@ -16,51 +21,54 @@
     {% endif %}
 
     <div id="Titulo">
-        <h1><i class="fas fa-mountain"> </i> Ponto de Partida</h1> 
+        <h1><i class="fas fa-mountain"> </i> <span data-translate="app-name">Ponto de Partida</span></h1> 
         <br>
         <hr>
     </div>
 
     <div id="subtitulo"> 
-        <p>Procurando um destino para viajar? Vem que aqui é seu lugar!</p>
-        <p>Sua jornada começa aqui!. Estamos prontos para ajudá-lo</p>
+        <p data-translate="subtitle-1">Procurando um destino para viajar? Vem que aqui é seu lugar!</p>
+        <p data-translate="subtitle-2">Sua jornada começa aqui!. Estamos prontos para ajudá-lo</p>
     </div>
     
     <div id="Plano_fundo">
-        <h1>LOGIN</h1>
+        <h1 data-translate="login-title">LOGIN</h1>
         <div id="Plano_frente">
             <form action="/login" id="login" method="post">
-                <label for="nome">NOME</label>
-                <input type="text" name="nome" id="nome" required placeholder="Digite seu nome">
+                <label for="nome" data-translate="name-label">NOME</label>
+                <input type="text" name="nome" id="nome" required data-translate="name-placeholder" placeholder="Digite seu nome">
                 
-                <label for="senha">SENHA</label>
-                <input type="password" name="senha" id="senha" required placeholder="Digite sua senha">
+                <label for="senha" data-translate="password-label">SENHA</label>
+                <input type="password" name="senha" id="senha" required data-translate="password-placeholder" placeholder="Digite sua senha">
+
+                <label for="cep_login" data-translate="cep-login-label">CEP</label>
+                <input type="text" name="cep_login" id="cep_login" required data-translate="cep-login-placeholder" placeholder="Informe seu CEP (apenas números)" pattern="\d{5}-?\d{3}" inputmode="numeric" maxlength="9">
                 
                 <button type="submit" id="btn_login">
                     <span></span>
                     <span></span>
                     <span></span>
-                    <span></span> ENTRAR
+                    <span></span> <span data-translate="enter-button">ENTRAR</span>
                 </button>
             </form>
             
             <button type="button" id="btn_mostrar_cadastro" class="btn-mostrar-cadastro">
-                <i class="fas fa-user-plus"></i>Cadastre-se aqui
+                <i class="fas fa-user-plus"></i><span data-translate="register-button">Cadastre-se aqui</span>
             </button>
             
             <div class="cadastro-section" id="cadastro_section" style="display: none;">
-                <h3>Cadastrar Nova Conta</h3>
+                <h3 data-translate="register-title">Cadastrar Nova Conta</h3>
                 <form action="/cadastrar" id="cadastro" method="post">
-                    <input type="text" name="nome" placeholder="Nome completo" required>
-                    <input type="email" name="email" placeholder="Email" required>
-                    <input type="password" name="senha" placeholder="Senha" required>
-                    <input type="password" name="confirmar_senha" placeholder="Confirmar senha" required>
+                    <input type="text" name="nome" data-translate="full-name" placeholder="Nome completo" required>
+                    <input type="email" name="email" data-translate="email" placeholder="Email" required>
+                    <input type="password" name="senha" data-translate="password" placeholder="Senha" required>
+                    <input type="password" name="confirmar_senha" data-translate="confirm-password" placeholder="Confirmar senha" required>
                     <div class="form-actions-cadastro">
                         <button type="submit" id="btn_cadastrar">
-                            <i class="fas fa-user-plus"></i> CADASTRAR
+                            <i class="fas fa-user-plus"></i> <span data-translate="register-submit">CADASTRAR</span>
                         </button>
                         <button type="button" id="btn_cancelar_cadastro" class="btn-cancelar-cadastro">
-                            <i class="fas fa-times"></i> Cancelar
+                            <i class="fas fa-times"></i> <span data-translate="cancel">Cancelar</span>
                         </button>
                     </div>
                 </form>
@@ -68,6 +76,8 @@
         </div>
     </div>
 
+    <script src="/static/js/translations.js"></script>
+    <script src="/static/js/translate.js"></script>
     <script>
         // Controle do formulário de cadastro
         document.getElementById('btn_mostrar_cadastro').addEventListener('click', function() {
